@@ -112,6 +112,12 @@ func (f *FS) GetDevInfo(id uint64) (out DevInfo, err error) {
 	return
 }
 
+type DevStatsFlags = uint64
+
+const (
+	DevStatsFlagsReset DevStatsFlags = _BTRFS_DEV_STATS_RESET
+)
+
 type DevStats struct {
 	WriteErrs uint64
 	ReadErrs  uint64
@@ -125,11 +131,11 @@ type DevStats struct {
 	Unknown        []uint64
 }
 
-func (f *FS) GetDevStats(id uint64) (out DevStats, err error) {
+func (f *FS) GetDevStatsWithFlags(id uint64, flags uint64) (out DevStats, err error) {
 	var arg btrfs_ioctl_get_dev_stats
 	arg.devid = id
 	arg.nr_items = _BTRFS_DEV_STAT_VALUES_MAX
-	arg.flags = 0
+	arg.flags = flags
 	if err = ioctl.Do(f.f, _BTRFS_IOC_GET_DEV_STATS, &arg); err != nil {
 		return
 	}
@@ -149,11 +155,14 @@ func (f *FS) GetDevStats(id uint64) (out DevStats, err error) {
 	}
 	return
 }
+func (f *FS) GetDevStats(id uint64) (out DevStats, err error) {
+	return f.GetDevStatsWithFlags(id, 0)
+}
 func (f *FS) ResetDevStats(id uint64) (err error) {
 	var arg btrfs_ioctl_get_dev_stats
 	arg.devid = id
 	arg.nr_items = _BTRFS_DEV_STAT_VALUES_MAX
-	arg.flags = _BTRFS_DEV_STATS_RESET
+	arg.flags = DevStatsFlagsReset
 	return ioctl.Do(f.f, _BTRFS_IOC_GET_DEV_STATS, &arg)
 }
 
